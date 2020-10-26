@@ -13,5 +13,8 @@ login: ## login to docker-registry
 build: ## Builds application image
 	@docker build --tag rekhanagyalakurthi/pre-interview:${TAG} --build-arg COMMIT_ID=${COMMIT_ID} .
 
+deploy: ## runs the given docker image
+	@ docker run --rm --detach --port 80:5000 --env APP_VERSION=${TAG} --name pre-interview rekhanagyalakurthi/pre-interview:${TAG}
+
 usage: ## Usage
 	@echo '[build:  Builds application image]'

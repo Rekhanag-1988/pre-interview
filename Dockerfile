@@ -1,12 +1,12 @@
 FROM docker.io/centos:7
-ARG COMMIT_ID
 
-RUN yum install --assumeyes openssl
+ARG COMMIT_ID
 
 RUN yum --assumeyes update && \
 	yum install --assumeyes \
 	python3 \
 	python3-devel
+
 RUN pip3 install flask
 
 COPY source /app

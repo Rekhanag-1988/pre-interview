@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 from flask import (
 	Flask,
 	request,
@@ -17,12 +17,13 @@ def home():
 @app.route('/version', methods=['GET'])
 def app_version():
 	commitid = open('/app/commit_id','r').readlines()[0].strip()
+	version = os.environ.get('APP_VERSION')
 	data = {
-			"Rena-Application": [
+			"Application_Details": [
 				{
-					"version":"1.0.0",
+					"version":version,
 					"lastcommithash":commitid,
-					"description":"Test application"
+					"description":"Pre Interview Technical Test"
 				}
 			]
 		}
