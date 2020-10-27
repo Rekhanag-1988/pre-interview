@@ -1,0 +1,67 @@
+{{- $chartName := .Chart.Name }}
+{{- if .Values.deploymentSpec }}
+{{- range $app, $appDetails := .Values.deploymentSpec }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $chartName -}}-{{- $app -}}-deployment
+  labels:
+    app: {{ $chartName -}}-{{- $app }}
+spec:
+  replicas: {{ $appDetails.replicaCount | default 1}}
+  selector:
+    matchLabels:
+      app: {{ $chartName -}}-{{- $app }}
+  template:
+    metadata:
+      labels:
+        app: {{ $chartName -}}-{{- $app }}
+    spec:
+      containers:
+        - name: {{ $chartName -}}-{{- $app -}}-pods
+          image: "{{ $appDetails.imageName -}}:{{- $appDetails.tag | default "latest" }}"
+          # imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
+          ports:
+          {{- range $name, $port := $appDetails.ports }}
+          {{- if empty (int $port.pod) }}
+            {{- fail "pod port can not be empty." }}
+          {{- end }}
+            - name: {{ $name }}
+              containerPort: {{ $port.pod | int }}
+          {{- end }}
+          env:
+            - name: APP_VERSION
+              value:  {{ $appDetails.tag | quote }}
+        {{- if $appDetails.livenessProbe.enable }}
+          {{- $port := index $appDetails.ports ($appDetails.livenessProbe.port | default "web") }}
+          livenessProbe:
+            {{- if $appDetails.livenessProbe.type | default "http" | lower | eq "http" }}
+            httpGet:
+              path:  {{ $appDetails.livenessProbe.path | default "/health" }}
+            {{- else }}
+            tcpSocket:
+            {{- end }}
+              port:  {{ $port.pod | int }}
+            initialDelaySeconds: {{ $appDetails.livenessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ $appDetails.livenessProbe.periodSeconds | default 30 }}
+        {{- end }}
+        {{- if $appDetails.readinessProbe.enable }}
+          {{- $port := index $appDetails.ports ($appDetails.readinessProbe.port | default "web") }}
+          readinessProbe:
+            {{- if $appDetails.readinessProbe.type | default "http" | lower | eq "http" }}
+            httpGet:
+              path:  {{ $appDetails.readinessProbe.path | default "/health" }}
+            {{- else }}
+            tcpSocket:
+            {{- end }}
+              port:  {{ $port.pod | int }}
+            initialDelaySeconds: {{ $appDetails.readinessProbe.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ $appDetails.readinessProbe.periodSeconds | default 30 }}
+        {{- end }}
+          resources:
+            limits:
+              memory: {{ $appDetails.memlimit | default "64Mi" }}  
+---
+{{- end }}
+{{- end }}

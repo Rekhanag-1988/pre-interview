@@ -1,0 +1,38 @@
+{{- $chartName := .Chart.Name }}
+{{- if .Values.deploymentSpec }}
+{{- range $app, $appDetails := .Values.deploymentSpec }}
+{{- if $appDetails.ports }}
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ $chartName -}}-{{- $app -}}-svc
+  labels:
+    name: {{ $chartName -}}-{{- $app -}}-svc
+spec:
+  selector:
+    app: {{ $chartName -}}-{{- $app }}
+  ports:
+  {{- range $name, $port := $appDetails.ports }}
+  {{- if and (hasKey $port "service") (empty (int $port.service)) }}
+    {{- fail "service port can not be empty if defined." }}
+  {{- end }}
+  {{- if $port.service }}
+    - name: {{ $name }}
+      protocol: TCP
+      port: {{ $port.service | int }}
+      {{- if eq $port.type "NodePort" }}
+      nodePort: {{ $port.nodeport | int }}
+      {{- end }}
+      targetPort: {{ $port.pod | int }}
+    {{- if $port.stickiness }}
+      sessionAffinity: ClientIP
+    {{- end }}
+  {{- if eq $port.type "NodePort" }}
+  type: NodePort
+  {{- end }}
+  {{- end }}
+  {{- end }}
+---
+{{- end }}
+{{- end }}
+{{- end }}

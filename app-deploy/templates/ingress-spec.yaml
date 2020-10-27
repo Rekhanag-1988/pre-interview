@@ -1,0 +1,25 @@
+{{- $chartName := .Chart.Name }}
+{{- if .Values.deploymentSpec }}
+{{- range $app, $appDetails := .Values.deploymentSpec }}
+{{- if $appDetails.ingress.enable }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ $chartName -}}-{{- $app -}}-ingress
+  annotations:
+spec:
+  rules:
+    - http:
+        paths:
+            {{- $port := index $appDetails.ports ($appDetails.ingress.port | default "web") }}
+          - path: {{ $appDetails.ingress.path | default (print "/" $chartName "/" $app) }}
+            backend:
+              serviceName: {{ $chartName -}}-{{- $app -}}-svc
+              servicePort: {{ $port.service | required "service port is required for ingress" | int }}
+    {{- if $appDetails.ingress.host }}
+      host: {{ $appDetails.ingress.host }}
+    {{- end }}
+---
+{{- end }}
+{{- end }}
+{{- end }}
